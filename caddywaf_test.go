@@ -4,10 +4,14 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"net/netip"
 	"os"
+	"reflect"
 	"testing"
 
+	"github.com/phemmer/go-iptrie"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 
 	"github.com/caddyserver/caddy/v2"
 )
@@ -159,4 +163,54 @@ func TestResponseRecorder_Write_EmptyBody(t *testing.T) {
 
 	// Assert that the status code is set to 200 by default
 	assert.Equal(t, http.StatusOK, rr.StatusCode())
+}
+
+func TestLoadIPBlacklist_CIDRHandling(t *testing.T) {
+	m := &Middleware{
+		blacklistLoader: &BlacklistLoader{
+			logger: zap.NewNop(),
+		},
+	}
+
+	filecontents := `
+		192.168.1.10
+		10.0.0.0/24
+		2001:db8::1
+		2001:db8::/64
+	`
+	t.Logf("filecontents: %s", filecontents)
+	expected := iptrie.NewTrie()
+	expected.Insert(netip.ParsePrefix("192.168.1.10/32"))
+	expected.Insert(netip.ParsePrefix("10.0.0.0/24"))
+	expected.Insert(netip.ParsePrefix("2001:db8::1/128"))
+	expected.Insert(netip.ParsePrefix("2001:db8::/64"))
+
+	tmpfile, err := os.CreateTemp("", "ipblacklist")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log("tmpfile created: " + tmpfile.Name())
+	defer os.Remove(tmpfile.Name())
+
+	if _, err := tmpfile.Write([]byte(filecontents)); err != nil {
+		t.Fatal(err)
+	}
+	t.Log("tmpfile written: " + tmpfile.Name())
+	if err := tmpfile.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	newIPBlacklist := iptrie.NewTrie()
+	err = m.loadIPBlacklist(tmpfile.Name(), *newIPBlacklist)
+	if err != nil {
+		t.Errorf("failed to load IP blacklist: %v", err)
+	}
+	t.Logf("ran loadIPBlacklist w/ contents: %s", newIPBlacklist)
+	actual := newIPBlacklist
+	t.Logf("actual: %s", actual)
+	t.Logf("m.IPBlacklist: %s", m.ipBlacklist)
+
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("unexpected result.\nGot:      %#v\nExpected: %#v", actual, expected)
+	}
 }

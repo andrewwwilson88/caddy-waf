@@ -113,8 +113,8 @@ func (m *Middleware) Provision(ctx caddy.Context) error {
 	// Configure console logging
 	consoleCfg := zap.NewProductionConfig()
 	consoleCfg.EncoderConfig.EncodeTime = caddyTimeEncoder
-	consoleCfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
-	consoleEncoder := zapcore.NewConsoleEncoder(consoleCfg.EncoderConfig)
+	consoleCfg.EncoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
+	consoleEncoder := zapcore.NewJSONEncoder(consoleCfg.EncoderConfig)
 	consoleSync := zapcore.AddSync(os.Stdout)
 
 	// Configure file logging
@@ -133,7 +133,7 @@ func (m *Middleware) Provision(ctx caddy.Context) error {
 	// Create a multi-core logger for both console and file
 	core := zapcore.NewTee(
 		zapcore.NewCore(consoleEncoder, consoleSync, logLevel),
-		zapcore.NewCore(fileEncoder, zapcore.AddSync(fileSync), logLevel),
+		//zapcore.NewCore(fileEncoder, zapcore.AddSync(fileSync), logLevel),
 	)
 
 	m.logger = zap.New(core)
