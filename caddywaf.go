@@ -121,6 +121,14 @@ func (m *Middleware) Provision(ctx caddy.Context) error {
 	fileCfg := zap.NewProductionConfig()
 	fileCfg.EncoderConfig.EncodeTime = caddyTimeEncoder
 	fileCfg.EncoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
+	//fileEncoder := zapcore.NewJSONEncoder(fileCfg.EncoderConfig)
+	//
+	//fileSync, err := os.OpenFile(m.LogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	//if err != nil {
+	//	m.logger.Warn("Failed to open log file, logging only to console", zap.String("path", m.LogFilePath), zap.Error(err))
+	//	m.logger = zap.New(zapcore.NewCore(consoleEncoder, consoleSync, logLevel))
+	//	return nil
+	//}
 
 	// Create a multi-core logger for both console and file
 	core := zapcore.NewTee(
@@ -202,6 +210,12 @@ func (m *Middleware) Provision(ctx caddy.Context) error {
 			if err != nil {
 				m.logger.Error("Failed to load GeoIP database", zap.String("path", geoIPPath), zap.Error(err))
 			} else {
+				defer func(reader *maxminddb.Reader) {
+					err := reader.Close()
+					if err != nil {
+						m.logger.Error("Failed to close GeoIP database", zap.String("path", geoIPPath), zap.Error(err))
+					}
+				}(reader)
 				m.logger.Info("GeoIP database loaded successfully", zap.String("path", geoIPPath))
 				if m.CountryBlacklist.Enabled {
 					m.CountryBlacklist.geoIP = reader
