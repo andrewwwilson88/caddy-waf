@@ -121,14 +121,6 @@ func (m *Middleware) Provision(ctx caddy.Context) error {
 	fileCfg := zap.NewProductionConfig()
 	fileCfg.EncoderConfig.EncodeTime = caddyTimeEncoder
 	fileCfg.EncoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
-	fileEncoder := zapcore.NewJSONEncoder(fileCfg.EncoderConfig)
-
-	fileSync, err := os.OpenFile(m.LogFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
-	if err != nil {
-		m.logger.Warn("Failed to open log file, logging only to console", zap.String("path", m.LogFilePath), zap.Error(err))
-		m.logger = zap.New(zapcore.NewCore(consoleEncoder, consoleSync, logLevel))
-		return nil
-	}
 
 	// Create a multi-core logger for both console and file
 	core := zapcore.NewTee(
@@ -260,7 +252,7 @@ func (m *Middleware) Provision(ctx caddy.Context) error {
 	// Load IP blacklist
 	if m.IPBlacklistFile != "" {
 		m.ipBlacklist = iptrie.NewTrie()
-		err = m.loadIPBlacklist(m.IPBlacklistFile, *m.ipBlacklist)
+		err := m.loadIPBlacklist(m.IPBlacklistFile, *m.ipBlacklist)
 		if err != nil {
 			return fmt.Errorf("failed to load IP blacklist: %w", err)
 		}
@@ -269,7 +261,7 @@ func (m *Middleware) Provision(ctx caddy.Context) error {
 	// Load DNS blacklist
 	if m.DNSBlacklistFile != "" {
 		m.dnsBlacklist = make(map[string]struct{})
-		err = m.loadDNSBlacklist(m.DNSBlacklistFile, m.dnsBlacklist)
+		err := m.loadDNSBlacklist(m.DNSBlacklistFile, m.dnsBlacklist)
 		if err != nil {
 			return fmt.Errorf("failed to load DNS blacklist: %w", err)
 		}
