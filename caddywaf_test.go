@@ -7,8 +7,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/caddyserver/caddy/v2"
 	"github.com/stretchr/testify/assert"
+
+	"github.com/caddyserver/caddy/v2"
 )
 
 func TestMiddleware_Provision(t *testing.T) {
