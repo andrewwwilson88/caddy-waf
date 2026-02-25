@@ -69,12 +69,12 @@ func (m *Middleware) ServeHTTP(w http.ResponseWriter, r *http.Request, next cadd
 	err := next.ServeHTTP(recorder, r)
 
 	// Phase 3: Response Header analysis
-	//if m.isPhaseBlocked(recorder, r, 3, state) {
-	//	return nil // Request blocked in Phase 3, short-circuit
-	//}
+	if m.isPhaseBlocked(recorder, r, 3, state) {
+		return nil // Request blocked in Phase 3, short-circuit
+	}
 
 	// Phase 4: Response Body analysis (if not already blocked)
-	//m.handleResponseBodyPhase(recorder, r, state)
+	m.handleResponseBodyPhase(recorder, r, state)
 
 	if state.Blocked {
 		// Metrics and response handling if blocked after headers phase
