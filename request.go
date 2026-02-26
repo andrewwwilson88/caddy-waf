@@ -46,7 +46,7 @@ const (
 	TargetResponseHeadersPrefix = "RESPONSE_HEADERS:" // Dynamic response header extraction prefix
 )
 
-var sensitiveTargets = []string{"password", "token", "apikey", "authorization", "secret"} // Define sensitive targets for redaction as package variable
+var sensitiveTargets = []string{"password", "token", "apikey", "secret"} // Define sensitive targets for redaction as package variable
 
 // NewRequestValueExtractor creates a new RequestValueExtractor with a given logger
 func NewRequestValueExtractor(logger *zap.Logger, redactSensitiveData bool, maxBodySize int64) *RequestValueExtractor {
@@ -377,7 +377,7 @@ func (rve *RequestValueExtractor) RedactValueIfSensitive(target string, value st
 	if rve.redactSensitiveData {
 		for _, sensitive := range sensitiveTargets {
 			if strings.Contains(strings.ToLower(target), sensitive) {
-				return "REDACTED"
+				return "REDACTED-BY-CADDY-WAF"
 			}
 		}
 	}
